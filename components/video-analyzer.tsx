@@ -11,41 +11,31 @@ import { Loader2, AlertTriangle, Youtube } from "lucide-react"
 import { TranscriptViewer } from "./transcript-viewer"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 
-type AnalysisResult = {
+interface AnalysisResult {
   title: string
   channelTitle?: string
   thumbnailUrl?: string
   summary: string
-  keyPoints: string[]
-  quotes: string[]
-  transcript: {
-    text: string
-    offset: number
-    duration: number
-  }[]
+  keyInsights: Array<{ emoji: string; text: string }>
+  quotes: Array<{ text: string; timestamp: string }>
+  transcript: Array<{ text: string; timestamp: string }>
   videoId?: string
   transcriptWarning?: string
   error?: string | null
 }
 
 export function VideoAnalyzer() {
-  const [url, setUrl] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [url, setUrl] = useState<string>("")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
-  const [error, setError] = useState("")
-  const [manualTranscript, setManualTranscript] = useState("")
-  const [useManualTranscript, setUseManualTranscript] = useState(false)
-  const [showManualInput, setShowManualInput] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!url && !manualTranscript) {
-      setError("Please enter a YouTube URL" + (showManualInput ? " or paste a transcript" : ""))
+    if (!url) {
+      setError("Please enter a YouTube URL")
       return
     }
 
@@ -53,31 +43,27 @@ export function VideoAnalyzer() {
       setIsLoading(true)
       setError("")
 
-      const data = await analyzeVideo(url, useManualTranscript ? manualTranscript : undefined)
+      const data = await analyzeVideo(url)
 
       if (data.error) {
-        if (data.suggestManualInput && !showManualInput) {
-          setError(`${data.error} You can try entering the transcript manually.`)
-          setShowManualInput(true)
-        } else {
-          setError(data.error)
-        }
+        setError(data.error)
         setResult(null)
+      } else if (data.title && Array.isArray(data.quotes) && data.quotes.every(quote => typeof quote === 'object' && quote !== null && 'text' in quote && 'timestamp' in quote)) {
+        setResult(data as unknown as AnalysisResult)
       } else {
-        setResult(data)
+        setError("Invalid response: missing title or quotes")
+        setResult(null)
       }
-    } catch (err: any) {
-      setError(`Failed to analyze video: ${err.message || "Unknown error"}. Please check the URL and try again.`)
-      console.error(err)
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || "An error occurred while analyzing the video.")
+      } else {
+        setError("An unknown error occurred while analyzing the video.")
+      }
       setResult(null)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const toggleManualTranscript = () => {
-    setUseManualTranscript(!useManualTranscript)
-    setShowManualInput(!showManualInput)
   }
 
   return (
@@ -92,7 +78,7 @@ export function VideoAnalyzer() {
             className="flex-1"
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading || (useManualTranscript && !manualTranscript)}>
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -103,27 +89,6 @@ export function VideoAnalyzer() {
             )}
           </Button>
         </div>
-
-        <div className="flex items-center space-x-2">
-          <Switch id="manual-transcript" checked={useManualTranscript} onCheckedChange={toggleManualTranscript} />
-          <Label htmlFor="manual-transcript">Enter transcript manually</Label>
-        </div>
-
-        {showManualInput && (
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Paste the video transcript here..."
-              value={manualTranscript}
-              onChange={(e) => setManualTranscript(e.target.value)}
-              className="min-h-[200px]"
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground">
-              Paste the transcript text here. You can often find transcripts by clicking the "..." button under YouTube
-              videos and selecting "Show transcript".
-            </p>
-          </div>
-        )}
 
         {error && (
           <Alert variant="destructive">
@@ -182,10 +147,10 @@ export function VideoAnalyzer() {
             <TabsContent value="keyPoints" className="mt-4">
               <ul className="list-disc pl-5 space-y-2">
                 {result.keyInsights.map((insight, index) => (
-                  <li key={index} className="text-sm flex items-center gap-2">
-                    <span>{insight.emoji}</span>
-                    <span>{insight.text}</span>
-                  </li>
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="text-2xl">{insight.emoji}</span>
+                    <p className="text-sm text-muted-foreground">{insight.text}</p>
+                  </div>
                 ))}
               </ul>
             </TabsContent>
@@ -193,16 +158,17 @@ export function VideoAnalyzer() {
             <TabsContent value="quotes" className="mt-4">
               <ul className="space-y-3">
                 {result.quotes.map((quote, index) => (
-                  <li key={index} className="text-sm border-l-2 pl-3 py-1">
-                    {quote}
-                  </li>
+                  <div key={index} className="flex flex-col gap-1">
+                    <p className="text-sm">{quote.text}</p>
+                    <p className="text-xs text-muted-foreground">{quote.timestamp}</p>
+                  </div>
                 ))}
               </ul>
             </TabsContent>
 
             <TabsContent value="transcript" className="mt-4">
               {result.transcript && result.transcript.length > 0 ? (
-                <TranscriptViewer transcript={result.transcript} />
+                <TranscriptViewer transcript={result.transcript.map(item => ({ text: item.text, offset: 0, duration: 0 }))} />
               ) : (
                 <p className="text-center text-muted-foreground py-8">No transcript available for this video.</p>
               )}

@@ -57,8 +57,12 @@ export function BlogAnalyzer() {
         setResult(data)
         setNeedsManualContent(false)
       }
-    } catch (err: any) {
-      setError(`Failed to analyze blog: ${err.message || "Unknown error"}. Please check the URL and try again.`)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(`Failed to analyze blog: ${err.message || "Unknown error"}. Please check the URL and try again.`)
+      } else {
+        setError("An unknown error occurred while analyzing the blog.")
+      }
       console.error(err)
       setResult(null)
     } finally {

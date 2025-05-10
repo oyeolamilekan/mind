@@ -1,5 +1,17 @@
 import { parse } from "node-html-parser";
 
+// Add minimal interfaces for script and document
+interface ScriptWithTextContent {
+  textContent: string;
+}
+interface ScriptCollection {
+  length: number;
+  [index: number]: unknown;
+}
+interface DocumentWithGetElementsByTagName {
+  getElementsByTagName: (tag: string) => ScriptCollection;
+}
+
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)";
 
@@ -92,31 +104,40 @@ function convertToMs(text: string) {
 function parseTranscriptEndpoint(document: unknown, langCode?: string) {
   try {
     // Get all script tags on document page
-    if (!document || typeof document !== 'object' || typeof (document as any).getElementsByTagName !== 'function') {
+    if (
+      !document ||
+      typeof document !== "object" ||
+      typeof (document as DocumentWithGetElementsByTagName).getElementsByTagName !== "function"
+    ) {
       return null;
     }
-    const scripts = (document as { getElementsByTagName: (tag: string) => any }).getElementsByTagName("script");
-    // find the player data script.
-    const playerScript = Array.from(scripts).find((script: unknown) => {
-      return typeof script === 'object' && script !== null && 'textContent' in script && typeof (script as any).textContent === 'string' && (script as any).textContent.includes("var ytInitialPlayerResponse = {");
+    const scripts = (document as DocumentWithGetElementsByTagName).getElementsByTagName("script");
+    const playerScript = Array.from(scripts).find((script): script is ScriptWithTextContent => {
+      return (
+        typeof script === "object" &&
+        script !== null &&
+        "textContent" in script &&
+        typeof (script as ScriptWithTextContent).textContent === "string" &&
+        (script as ScriptWithTextContent).textContent.includes("var ytInitialPlayerResponse = {")
+      );
     });
-    if (!playerScript || typeof (playerScript as any).textContent !== 'string') {
+    if (!playerScript || typeof playerScript.textContent !== "string") {
       return null;
     }
     const dataString =
-      (playerScript as any).textContent
-        ?.split("var ytInitialPlayerResponse = ")?.[1] //get the start of the object {....
-        ?.split("};")?.[0] + // chunk off any code after object closure.
-      "}"; // add back that curly brace we just cut.
-    const data = JSON.parse(dataString.trim()); // Attempt a JSON parse
+      playerScript.textContent
+        ?.split("var ytInitialPlayerResponse = ")?.[1]
+        ?.split("};")?.[0] +
+      "}";
+    const data = JSON.parse(dataString.trim());
     const availableCaptions =
       data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-    // If languageCode was specified then search for it's code, otherwise get the first.
     let captionTrack = availableCaptions?.[0];
     if (langCode)
       captionTrack =
-        availableCaptions.find((track: unknown) =>
-          typeof track === 'object' && track !== null && 'languageCode' in track && typeof (track as any).languageCode === 'string' && (track as any).languageCode.includes(langCode)
+        availableCaptions.find(
+          (track: { languageCode?: string }) =>
+            typeof track.languageCode === "string" && track.languageCode.includes(langCode)
         ) ?? availableCaptions?.[0];
     return captionTrack?.baseUrl;
   } catch (e: unknown) {
