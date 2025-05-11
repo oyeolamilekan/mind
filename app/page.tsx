@@ -1,31 +1,20 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VideoAnalyzer } from "@/components/video-analyzer"
-import { BlogAnalyzer } from "@/components/blog-analyzer"
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 md:p-24">
-      <div className="max-w-3xl w-full space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Content Analyzer</h1>
-          <p className="text-muted-foreground">Extract insights from YouTube videos and blog articles</p>
-        </div>
-
-        <Tabs defaultValue="video" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="video">YouTube Videos</TabsTrigger>
-            <TabsTrigger value="blog">Blog Articles</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="video" className="mt-6">
-            <VideoAnalyzer />
-          </TabsContent>
-
-          <TabsContent value="blog" className="mt-6">
-            <BlogAnalyzer />
-          </TabsContent>
-        </Tabs>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
+      <h1 className="text-4xl font-bold mb-4 text-center text-gray-900">Welcome to the Video Analyzer</h1>
+      <p className="text-lg mb-8 text-center text-gray-700">Analyze YouTube videos and get insights!</p>
+      <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Features</h2>
+        <ul className="list-disc pl-5 space-y-2 mb-6 text-gray-700">
+          <li>Analyze YouTube videos for key insights</li>
+          <li>Extract quotes and timestamps</li>
+          <li>View video transcripts</li>
+          <li>Get AI-powered summaries</li>
+        </ul>
+        <VideoAnalyzer />
       </div>
-    </main>
+    </div>
   )
 }

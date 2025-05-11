@@ -19,7 +19,7 @@ interface AnalysisResult {
   summary: string
   keyInsights: Array<{ emoji: string; text: string }>
   quotes: Array<{ text: string; timestamp: string }>
-  transcript: Array<{ text: string; timestamp: string }>
+  transcript: Array<{ text: string; offset: number; duration: number }>
   videoId?: string
   transcriptWarning?: string
   error?: string | null
@@ -44,6 +44,7 @@ export function VideoAnalyzer() {
       setError("")
 
       const data = await analyzeVideo(url)
+      console.log("data", data);
 
       if (data.error) {
         setError(data.error)
@@ -75,10 +76,10 @@ export function VideoAnalyzer() {
             placeholder="Paste YouTube URL here"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="flex-1"
+            className="flex-1 text-gray-900"
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading || !url.trim()}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -168,7 +169,7 @@ export function VideoAnalyzer() {
 
             <TabsContent value="transcript" className="mt-4">
               {result.transcript && result.transcript.length > 0 ? (
-                <TranscriptViewer transcript={result.transcript.map(item => ({ text: item.text, offset: 0, duration: 0 }))} />
+                <TranscriptViewer transcript={result.transcript} />
               ) : (
                 <p className="text-center text-muted-foreground py-8">No transcript available for this video.</p>
               )}

@@ -49,7 +49,8 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
         return res.text();
       })
       .then((html) => parse(html))
-      .then((html) => parseTranscriptEndpoint(html, lang));
+      .then((html) => parseTranscriptEndpoint(html, lang))
+      .catch(err => console.log("err", err));
 
     if (!transcriptUrl) {
       console.error(`[youtube.ts] Failed to locate a transcript URL for video ID ${identifier} with lang ${lang}.`);
@@ -66,14 +67,21 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
         }
         return res.text();
       })
-      .then((xml) => parse(xml));
+      .then((xml) => parse(xml))
+    console.log("transcriptXML", transcriptXML);
 
-    const chunks = transcriptXML.getElementsByTagName("text");
+    const chunks = transcriptXML?.getElementsByTagName("text");
 
     const transcriptions = [];
     for (const chunk of chunks) {
-      const [offset, duration] = chunk.rawAttrs.split(" ");
-      
+      const attrs: Record<string, number> = {};
+      chunk.rawAttrs.split(" ").forEach(attr => {
+        const [key, value] = attr.split("=");
+        if (key && value) {
+          attrs[key] = parseFloat(value.replace(/"/g, ""));
+        }
+      });
+
       // Decode common HTML entities from chunk.text
       let cleanText = chunk.text;
       cleanText = cleanText.replace(/&#39;/g, "'")
@@ -85,8 +93,8 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
 
       transcriptions.push({
         text: cleanText, // Use the cleaned text
-        offset: convertToMs(offset),
-        duration: convertToMs(duration),
+        offset: Math.round((attrs["start"] ?? 0) * 1000),    // ms
+        duration: Math.round((attrs["dur"] ?? 0) * 1000),    // ms
       });
     }
     return transcriptions;
@@ -94,11 +102,6 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
     const message = e instanceof Error ? e.message : String(e);
     throw new YoutubeTranscriptError(message);
   }
-}
-
-function convertToMs(text: string) {
-  const float = parseFloat(text.split("=")[1].replace(/"/g, "")) * 1000;
-  return Math.round(float);
 }
 
 function parseTranscriptEndpoint(document: unknown, langCode?: string) {

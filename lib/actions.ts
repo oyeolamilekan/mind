@@ -13,6 +13,13 @@ import {
     TranscriptItem // Import TranscriptItem type
 } from "../lib/aiProcessor";
 
+// Helper function to format timestamp in MM:SS format
+function formatTimestamp(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
 // Local TranscriptItem type definition removed, will use imported one.
 // export type TranscriptItem = {
 //   text: string
@@ -35,7 +42,7 @@ export async function analyzeVideo(url: string) {
     let analysisTranscriptForDisplay: TranscriptItem[] = [];
     let analysisSummary = "";
     let analysisKeyInsights: { emoji: string; text: string }[] = [];
-    let analysisQuotes: string[] = [];
+    let analysisQuotes: { text: string; timestamp: string }[] = [];
     const transcriptWarning = null; // Placeholder, adjust if warnings are generated
 
     console.log("Processing video with ID:", videoId);
@@ -63,7 +70,12 @@ export async function analyzeVideo(url: string) {
     if (captionsText) {
       analysisSummary = await generateSummaryWithAI(captionsText, analysisTitle);
       analysisKeyInsights = await extractKeyInsightsWithAI(captionsText, analysisTitle);
-      analysisQuotes = await extractQuotesWithAI(captionsText, analysisTitle);
+      const rawQuotes = await extractQuotesWithAI(captionsText, analysisTitle);
+      // Convert raw quotes to objects with text and timestamp
+      analysisQuotes = rawQuotes.map(quote => ({
+        text: quote,
+        timestamp: "00:00" // Placeholder timestamp since we don't have actual timestamps from the AI
+      }));
     } else {
       console.warn("Transcript text is empty after fetching for videoId:", videoId);
       analysisSummary = "Summary not available: Transcript content is empty.";
@@ -76,6 +88,51 @@ export async function analyzeVideo(url: string) {
       duration: item.duration / 1000, // ms to s
     }));
 
+    // Find timestamps for quotes by matching them with transcript items
+    const quotesWithTimestamps = analysisQuotes.map(quote => {
+      // Clean and normalize the quote text for better matching
+      const cleanQuote = quote.text.toLowerCase().trim().replace(/[.,!?]/g, '');
+      
+      // Find the transcript item that contains this quote
+      const matchingTranscriptItem = analysisTranscriptForDisplay.find(item => {
+        const cleanTranscript = item.text.toLowerCase().trim().replace(/[.,!?]/g, '');
+        // Check if the quote is a significant part of the transcript item
+        return cleanTranscript.includes(cleanQuote) && 
+               (cleanQuote.length > 10 || cleanTranscript.length < 100); // Avoid matching very short quotes in long transcript items
+      });
+      
+      // If no exact match found, try to find the closest match
+      if (!matchingTranscriptItem) {
+        // Find the transcript item with the most words in common with the quote
+        const wordsInQuote = new Set(cleanQuote.split(/\s+/));
+        let bestMatch = null;
+        let maxCommonWords = 0;
+        
+        for (const item of analysisTranscriptForDisplay) {
+          const wordsInTranscript = new Set(item.text.toLowerCase().trim().replace(/[.,!?]/g, '').split(/\s+/));
+          const commonWords = [...wordsInQuote].filter(word => wordsInTranscript.has(word));
+          
+          if (commonWords.length > maxCommonWords) {
+            maxCommonWords = commonWords.length;
+            bestMatch = item;
+          }
+        }
+        
+        // Use the best match if it has enough common words
+        if (bestMatch && maxCommonWords >= 3) {
+          return {
+            text: quote.text,
+            timestamp: formatTimestamp(bestMatch.offset)
+          };
+        }
+      }
+      
+      return {
+        text: quote.text,
+        timestamp: matchingTranscriptItem ? formatTimestamp(matchingTranscriptItem.offset) : "00:00"
+      };
+    });
+
     return {
       title: analysisTitle, // Placeholder or fetched title
       channelTitle: analysisChannelTitle, // Placeholder or fetched
@@ -84,7 +141,7 @@ export async function analyzeVideo(url: string) {
       videoId: videoId,
       summary: analysisSummary,
       keyInsights: analysisKeyInsights,
-      quotes: analysisQuotes,
+      quotes: quotesWithTimestamps,
       transcriptWarning,
       error: null,
     };
