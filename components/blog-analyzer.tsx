@@ -88,7 +88,7 @@ export function BlogAnalyzer() {
               setUrl(e.target.value)
               if (needsManualContent) resetForm()
             }}
-            className="flex-1"
+            className="flex-1 bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 caret-gray-900 dark:caret-gray-100"
             disabled={isLoading}
           />
           <Button type="submit" disabled={isLoading || (needsManualContent && !manualContent)}>
@@ -117,7 +117,7 @@ export function BlogAnalyzer() {
               placeholder="Paste the article content here..."
               value={manualContent}
               onChange={(e) => setManualContent(e.target.value)}
-              className="min-h-[200px]"
+              className="min-h-[200px] bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 caret-gray-900 dark:caret-gray-100"
             />
             <div className="flex justify-between">
               <Button variant="outline" onClick={resetForm} type="button">
@@ -132,10 +132,10 @@ export function BlogAnalyzer() {
       </form>
 
       {result && !error && (
-        <div className="space-y-4 border rounded-lg p-4">
+        <div className="space-y-4 border rounded-lg p-4 bg-white shadow dark:bg-gray-900 dark:border-gray-700">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold">{result.title}</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{result.title}</h2>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
               <a href={result.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                 {result.url}
               </a>

@@ -40,18 +40,25 @@ export function TranscriptViewer({ transcript }: TranscriptViewerProps) {
         className="mb-2"
       />
 
-      <ScrollArea className="h-[400px] rounded-md border p-4">
+      <ScrollArea className="h-[400px] rounded-xl border bg-white shadow p-4 dark:bg-gray-900 dark:border-gray-700">
         {filteredTranscript.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredTranscript.map((item, index) => (
-              <div key={index} className="flex leading-relaxed space-x-1.5">
-                <div className="text-sm text-muted-foreground">{formatTime(item.offset)}</div>
-                <p className="text-sm font-bold">{item.text}</p>
+              <div
+                key={index}
+                className="flex items-baseline gap-3 group hover:bg-blue-50 hover:rounded transition px-2 py-1 dark:hover:bg-blue-900"
+              >
+                <span className="font-mono text-xs text-muted-foreground min-w-[110px] group-hover:text-blue-600 transition dark:text-gray-400 dark:group-hover:text-blue-300">
+                  {formatTime(item.offset)}
+                </span>
+                <span className="text-base leading-relaxed group-hover:bg-blue-100 group-hover:rounded px-1 transition dark:group-hover:bg-blue-900 dark:text-gray-100">
+                  {item.text}
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-8">
+          <p className="text-center text-muted-foreground py-8 dark:text-gray-400">
             {searchTerm ? "No matching transcript segments found." : "No transcript available."}
           </p>
         )}

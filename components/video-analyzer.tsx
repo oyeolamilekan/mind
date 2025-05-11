@@ -101,80 +101,91 @@ export function VideoAnalyzer() {
       </form>
 
       {result && (
-        <div className="space-y-4 border rounded-lg p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {result.thumbnailUrl && (
-              <div className="flex-shrink-0">
-                <div className="relative w-full md:w-48 aspect-video rounded-md overflow-hidden">
-                  <img
-                    src={result.thumbnailUrl || "/placeholder.svg"}
-                    alt={result.title}
-                    className="object-cover w-full h-full"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-black bg-opacity-60 rounded-full p-2">
-                      <Youtube className="w-8 h-8 text-white" />
+        <div className="space-y-4">
+          {result.thumbnailUrl && (
+            <div className="flex justify-center">
+              <img
+                src={result.thumbnailUrl}
+                alt={result.title}
+                className="rounded-xl shadow-lg w-full max-w-2xl object-cover aspect-video mb-4 border border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          )}
+          <div className="space-y-4 border rounded-lg p-4 bg-white shadow dark:bg-gray-900 dark:border-gray-700">
+            <div className="flex flex-col md:flex-row gap-4">
+              {result.thumbnailUrl && (
+                <div className="flex-shrink-0">
+                  <div className="relative w-full md:w-48 aspect-video rounded-md overflow-hidden">
+                    <img
+                      src={result.thumbnailUrl || "/placeholder.svg"}
+                      alt={result.title}
+                      className="object-cover w-full h-full"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-black bg-opacity-60 rounded-full p-2">
+                        <Youtube className="w-8 h-8 text-white" />
+                      </div>
                     </div>
                   </div>
+                  {result.channelTitle && (
+                    <p className="text-xs text-muted-foreground mt-1 text-center md:text-left">{result.channelTitle}</p>
+                  )}
                 </div>
-                {result.channelTitle && (
-                  <p className="text-xs text-muted-foreground mt-1 text-center md:text-left">{result.channelTitle}</p>
+              )}
+              <div className="flex-grow">
+                <h2 className="text-xl font-semibold">{result.title}</h2>
+                {result.transcriptWarning && (
+                  <Alert className="mt-2 bg-amber-50 border-amber-200">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700">{result.transcriptWarning}</AlertDescription>
+                  </Alert>
                 )}
               </div>
-            )}
-            <div className="flex-grow">
-              <h2 className="text-xl font-semibold">{result.title}</h2>
-              {result.transcriptWarning && (
-                <Alert className="mt-2 bg-amber-50 border-amber-200">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-700">{result.transcriptWarning}</AlertDescription>
-                </Alert>
-              )}
             </div>
+
+            <Tabs defaultValue="summary">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="keyPoints">Key Points</TabsTrigger>
+                <TabsTrigger value="quotes">Quotes</TabsTrigger>
+                <TabsTrigger value="transcript">Transcript</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="summary" className="mt-4">
+                <p className="text-sm leading-relaxed">{result.summary}</p>
+              </TabsContent>
+
+              <TabsContent value="keyPoints" className="mt-4">
+                <ul className="list-disc pl-5 space-y-2">
+                  {result.keyInsights.map((insight, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <span className="text-2xl">{insight.emoji}</span>
+                      <p className="text-sm text-muted-foreground">{insight.text}</p>
+                    </div>
+                  ))}
+                </ul>
+              </TabsContent>
+
+              <TabsContent value="quotes" className="mt-4">
+                <ul className="space-y-3">
+                  {result.quotes.map((quote, index) => (
+                    <div key={index} className="flex flex-col gap-1">
+                      <p className="text-sm">{quote.text}</p>
+                      <p className="text-xs text-muted-foreground">{quote.timestamp}</p>
+                    </div>
+                  ))}
+                </ul>
+              </TabsContent>
+
+              <TabsContent value="transcript" className="mt-4">
+                {result.transcript && result.transcript.length > 0 ? (
+                  <TranscriptViewer transcript={result.transcript} />
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No transcript available for this video.</p>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
-
-          <Tabs defaultValue="summary">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="keyPoints">Key Points</TabsTrigger>
-              <TabsTrigger value="quotes">Quotes</TabsTrigger>
-              <TabsTrigger value="transcript">Transcript</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="summary" className="mt-4">
-              <p className="text-sm leading-relaxed">{result.summary}</p>
-            </TabsContent>
-
-            <TabsContent value="keyPoints" className="mt-4">
-              <ul className="list-disc pl-5 space-y-2">
-                {result.keyInsights.map((insight, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <span className="text-2xl">{insight.emoji}</span>
-                    <p className="text-sm text-muted-foreground">{insight.text}</p>
-                  </div>
-                ))}
-              </ul>
-            </TabsContent>
-
-            <TabsContent value="quotes" className="mt-4">
-              <ul className="space-y-3">
-                {result.quotes.map((quote, index) => (
-                  <div key={index} className="flex flex-col gap-1">
-                    <p className="text-sm">{quote.text}</p>
-                    <p className="text-xs text-muted-foreground">{quote.timestamp}</p>
-                  </div>
-                ))}
-              </ul>
-            </TabsContent>
-
-            <TabsContent value="transcript" className="mt-4">
-              {result.transcript && result.transcript.length > 0 ? (
-                <TranscriptViewer transcript={result.transcript} />
-              ) : (
-                <p className="text-center text-muted-foreground py-8">No transcript available for this video.</p>
-              )}
-            </TabsContent>
-          </Tabs>
         </div>
       )}
     </div>

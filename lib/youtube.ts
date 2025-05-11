@@ -68,7 +68,6 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
         return res.text();
       })
       .then((xml) => parse(xml))
-    console.log("transcriptXML", transcriptXML);
 
     const chunks = transcriptXML?.getElementsByTagName("text");
 
