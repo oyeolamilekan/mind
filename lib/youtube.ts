@@ -41,7 +41,6 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
       }
     )
       .then((res) => {
-        console.error("res.text()", res.text());
         if (!res.ok) {
           // Log error details before throwing for failed page fetch
           console.error(`[youtube.ts] Failed to fetch video page ${videoPageUrl}. Status: ${res.status} ${res.statusText}`);
