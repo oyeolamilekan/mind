@@ -126,6 +126,8 @@ async function fetchTranscript(videoId: string, config: YtFetchConfig = {}) {
       { headers },
       config
     );
+
+    console.log(`[youtube.ts] Page response: ${pageResponse.status} ${pageResponse.statusText}`);
     
     if (!pageResponse.ok) {
       throw new YoutubeTranscriptError(`Failed to fetch video page: ${pageResponse.status} ${pageResponse.statusText}`);
