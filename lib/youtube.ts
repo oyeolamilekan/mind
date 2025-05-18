@@ -12,6 +12,14 @@ interface DocumentWithGetElementsByTagName {
   getElementsByTagName: (tag: string) => ScriptCollection;
 }
 
+interface CaptionTrack {
+  languageCode: string;
+  baseUrl: string;
+  name?: {
+    simpleText?: string;
+  };
+}
+
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -224,7 +232,7 @@ function parseTranscriptEndpoint(document: unknown, langCode?: string) {
             // Debug log for available caption tracks
             if (availableCaptions.length > 0) {
               console.log(`[youtube.ts] Found ${availableCaptions.length} caption tracks`);
-              availableCaptions.forEach((track: any, index: number) => {
+              availableCaptions.forEach((track: CaptionTrack, index: number) => {
                 console.log(`[youtube.ts] Track ${index}: ${track.languageCode} - ${track.name?.simpleText || 'Unnamed'}`);
               });
             } else {
@@ -235,7 +243,7 @@ function parseTranscriptEndpoint(document: unknown, langCode?: string) {
             
             if (langCode) {
               captionTrack = availableCaptions.find(
-                (track: { languageCode?: string }) =>
+                (track: CaptionTrack) =>
                   typeof track.languageCode === "string" && 
                   track.languageCode.toLowerCase().includes(langCode.toLowerCase())
               ) ?? availableCaptions[0];
